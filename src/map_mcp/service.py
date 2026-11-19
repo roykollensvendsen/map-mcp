@@ -21,6 +21,8 @@ NO_QUERY = "Say an address or a place name to look for."
 BROKE = "That went wrong inside map-mcp. Try again, and if it fails again, check its log."
 #: How many matches the voice reads before it asks which one was meant.
 READ_OUT = 3
+#: map-mcp's own pacing waits under a second, too short to count aloud.
+BUSY_A_MOMENT = "Kartverket is busy for a moment; ask again."
 
 
 class MapService:
@@ -54,7 +56,7 @@ class MapService:
         try:
             return await self._geocoder.find(what)
         except BusyError as busy:
-            return _failed("busy", f"The address service is busy; try again in {_seconds(busy.seconds)}.")
+            return _failed("busy", _busy(busy.seconds))
         except UnreachableError:
             return _failed("unreachable", UNREACHABLE)
         except QueryError:
@@ -83,6 +85,14 @@ def _label(place: Place) -> str:
     if place.name == place.municipality:
         return f"{place.name}, a {place.kind}"
     return f"{place.name}, a {place.kind} in {place.municipality}"
+
+
+def _busy(seconds: float) -> str:
+    """A wait under a second with no number, since it is gone before it is said; a longer one in seconds."""
+    # RULE: our own short wait is said with no number and a service's wait in seconds
+    if seconds < 1:
+        return BUSY_A_MOMENT
+    return f"The address service is busy; try again in {_seconds(seconds)}."
 
 
 def _seconds(seconds: float) -> str:

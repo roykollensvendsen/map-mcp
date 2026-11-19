@@ -28,8 +28,9 @@ class SettingsError(ValueError):
 class Settings:
     """What the plugin reads from its config file."""
 
-    address: str = "source.example.invalid"
-    simulate: bool = True
+    #: Answer from the made-up places instead of Kartverket. Off unless asked for, since
+    #: Kartverket needs no key and no device.
+    simulate: bool = False
 
 
 def config_file() -> pathlib.Path:
@@ -48,9 +49,8 @@ def load(path: pathlib.Path | None = None) -> Settings:
     except tomllib.TOMLDecodeError as broken:
         msg = f"{path} is not valid TOML ({broken}); fix it, or delete it to use the defaults"
         raise SettingsError(msg) from broken
-    device = data.pop("device", {})
-    unknown = sorted(data) + sorted(f"device.{key}" for key in device if key not in ("address", "simulate"))
+    unknown = sorted(key for key in data if key != "simulate")
     if unknown:
         msg = f"{path} has keys map-mcp does not know: {', '.join(unknown)}; remove them or fix their spelling"
         raise SettingsError(msg)
-    return Settings(address=str(device.get("address", Settings.address)), simulate=bool(device.get("simulate", True)))
+    return Settings(simulate=bool(data.get("simulate", Settings.simulate)))

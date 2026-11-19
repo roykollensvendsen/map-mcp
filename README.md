@@ -28,7 +28,8 @@ claude-voice plugins install map --from <this folder>
 ```
 
 It reads `claude-voice-plugin.toml`, writes `config.default.toml` as your first config, and
-ends with the usual typed-name approval.
+ends with the usual typed-name approval. A run then asks Kartverket, which needs no key and no
+setup; `simulate = true` in that config answers from the made-up places instead.
 
 ## What is where
 

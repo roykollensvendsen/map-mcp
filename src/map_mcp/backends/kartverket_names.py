@@ -1,6 +1,6 @@
 """Kartverket's place-name search (api.kartverket.no/stedsnavn), as a Geocoder.
 
-Place-name data © Kartverket. No key or login is needed. What was searched for goes to Kartverket
+Place-name data © Kartverket, CC BY 4.0. No key or login is needed. What was searched for goes to Kartverket
 as the `sok` parameter; nothing else about the owner does.
 """
 
@@ -56,11 +56,16 @@ class KartverketNames:
 
 
 def _place(item: Any) -> Place | None:  # noqa: ANN401 - one item of the service's JSON
-    """One place, or None when it lacks a part the voice or the backends need."""
+    """One place, or None when it lacks a part the voice or the backends need.
+
+    The live service sends its point in the system asked for, with no koordsys beside it (seen
+    19.11, though the spec lists one). A koordsys that is there and names another system is
+    dropped, since metres read as degrees would put the place far out at sea.
+    """
     try:
         point = item["representasjonspunkt"]
         # RULE: an item in another coordinate system is left out
-        if str(point["koordsys"]) != LAT_LON:
+        if str(point.get("koordsys", LAT_LON)) != LAT_LON:
             return None
         municipalities = item.get("kommuner") or []
         return Place(

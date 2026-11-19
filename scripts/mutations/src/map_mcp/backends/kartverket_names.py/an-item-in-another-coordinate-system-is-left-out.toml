@@ -1,5 +1,5 @@
 [[rule]]
 name = "an item in another coordinate system is left out"
 file = "src/map_mcp/backends/kartverket_names.py"
-find = 'if str\(point\["koordsys"\]\) != LAT_LON:'
+find = 'if str\(point\.get\("koordsys", LAT_LON\)\) != LAT_LON:'
 replace = 'if False:'

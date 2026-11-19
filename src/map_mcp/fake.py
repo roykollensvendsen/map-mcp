@@ -101,8 +101,8 @@ class FakeKartverketHttp:
         self.timeout = False
         self.not_json = False
         self.drop_point = False
-        #: The coordinate system the place-name search answers in.
-        self.names_koordsys = 4258
+        #: A koordsys for the place-name point. The live service sends none, so by default none.
+        self.names_koordsys: int | None = None
 
     def __call__(self, url: str, headers: dict[str, str], timeout: float) -> Response:  # noqa: ARG002
         """Answer one GET the way the service would."""
@@ -160,7 +160,8 @@ class FakeKartverketHttp:
                 "kommuner": [{"kommunenavn": place.municipality, "kommunenummer": "0000"}]
                 if place.municipality
                 else [],
-                "representasjonspunkt": {"øst": place.lon, "nord": place.lat, "koordsys": self.names_koordsys},
+                "representasjonspunkt": {"øst": place.lon, "nord": place.lat}
+                | ({} if self.names_koordsys is None else {"koordsys": self.names_koordsys}),
             }
             found.append(item)
         return found

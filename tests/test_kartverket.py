@@ -13,7 +13,7 @@ from map_mcp.backends.kartverket import Kartverket
 from map_mcp.backends.kartverket_address import KartverketAddress
 from map_mcp.backends.kartverket_names import KartverketNames
 from map_mcp.fake import FakeKartverket, FakeKartverketHttp
-from map_mcp.interfaces import UnreachableError
+from map_mcp.interfaces import BusyError, UnreachableError
 
 
 class _Clock:
@@ -65,3 +65,12 @@ def test_a_real_run_asks_kartverket_and_a_simulated_run_the_made_up_places():
 def test_the_place_name_search_is_read_from_the_host_kartverket_recommends():
     """The place-name service moved to api.kartverket.no; ws.geonorge.no is only a proxy for it."""
     assert kartverket_names.URL.startswith("https://api.kartverket.no/stedsnavn/v1/")
+
+
+def test_when_one_service_fails_and_the_other_finds_nothing_the_failure_is_said():
+    """Nothing found would be untrue when one search never ran: the owner hears the failure instead."""
+    busy = FakeKartverketHttp()
+    busy.busy_for = 30
+    with pytest.raises(BusyError) as said:
+        asyncio.run(_kartverket(addresses=busy, names=FakeKartverketHttp()).find("Ingensteds"))
+    assert said.value.seconds == 30

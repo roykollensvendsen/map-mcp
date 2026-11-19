@@ -66,3 +66,17 @@ def test_an_item_in_another_coordinate_system_is_left_out():
 def test_a_blank_search_is_refused_by_the_service():
     with pytest.raises(QueryError):
         asyncio.run(_names()[0].find(""))
+
+
+def test_an_item_missing_its_point_is_left_out():
+    def answers(_url, _headers, _timeout):
+        return http.Response(200, {}, '{"navn": [{"skrivemåte": "Prøvevatnet", "navneobjekttype": "Innsjø"}]}'.encode())
+
+    names = KartverketNames(transport=answers, limiter=http.Limiter(clock=_Clock()))
+    assert asyncio.run(names.find("Prøvevatnet")) == []
+
+
+def test_the_fake_answers_a_path_it_does_not_know_with_not_found():
+    """So a backend pointed at a wrong path fails in a test as it would against the service."""
+    fake = FakeKartverketHttp()
+    assert fake("https://example.invalid/ukjent/v1/sok?sok=x", {}, 8.0).status == 404

@@ -15,7 +15,7 @@ from map_mcp.interfaces import BusyError, NotSetUpError, QueryError, Unreachable
 if TYPE_CHECKING:
     from map_mcp.interfaces import Geocoder, Place
 
-UNREACHABLE = "The address service isn't answering. Try again in a minute."
+UNREACHABLE = "Kartverket isn't answering. Try again in a minute."
 NOT_SET_UP = "No address service is set up yet, so nothing was asked."
 NO_QUERY = "Say an address or a place name to look for."
 BROKE = "That went wrong inside map-mcp. Try again, and if it fails again, check its log."
@@ -92,7 +92,7 @@ def _busy(seconds: float) -> str:
     # RULE: our own short wait is said with no number and a service's wait in seconds
     if seconds < 1:
         return BUSY_A_MOMENT
-    return f"The address service is busy; try again in {_seconds(seconds)}."
+    return f"Kartverket is busy; try again in {_seconds(seconds)}."
 
 
 def _seconds(seconds: float) -> str:

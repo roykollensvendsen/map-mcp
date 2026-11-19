@@ -1,5 +1,5 @@
 [[rule]]
 name = "when one service fails the other still answers"
 file = "src/map_mcp/backends/kartverket.py"
-find = 'if not found:'
-replace = 'if len(found) < 2:  # noqa: PLR2004'
+find = 'if failed and not places:'
+replace = 'if failed:'

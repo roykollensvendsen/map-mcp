@@ -1,0 +1,5 @@
+[[rule]]
+name = "an unprocessable search is a refusal not a failure"
+file = "src/map_mcp/backends/http.py"
+find = 'if answer\.status in REFUSED:'
+replace = 'if answer.status == 400:  # noqa: PLR2004'

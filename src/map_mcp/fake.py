@@ -73,15 +73,21 @@ class Sent:
     headers: dict[str, str]
 
 
+#: What each service was seen to answer a blank search with, on 19.11.
+BLANK_ADDRESS = Response(400, {}, b'{"message": "no search word"}')
+BLANK_NAMES = Response(422, {}, b'{"errors": {"message": {"query": {"sok": ["too short"]}}}}')
+
+
 class FakeKartverketHttp:
     """Kartverket over HTTP, in memory: a transport for the real backends, in the service's shape.
 
     It answers `/adresser/v1/sok` as the address search does, from the made-up places of kind
     "address", and `/stedsnavn/v1/navn` as the place-name search does, from the rest. The
-    place-name kinds go back to the service's own words. A blank `sok` gets a 400 (the spec
-    says only that a search word is needed, so the
-    status is a guess to check at build). It can be busy (429), broken (500), slow (a timeout
-    whose text holds the URL, as the standard library's does), or answer with what is not JSON.
+    place-name kinds go back to the service's own words. A blank `sok` gets what each service
+    was seen to send on 19.11: a 400 with a message from the address search, and a 422 with an
+    errors object from the place-name search. It can be busy (429), broken (500), slow (a
+    timeout whose text holds the URL, as the standard library's does), or answer with what is
+    not JSON.
     """
 
     def __init__(self, places: list[Place] | tuple[Place, ...] = MADE_UP) -> None:
@@ -125,7 +131,7 @@ class FakeKartverketHttp:
     def _search(self, path: str, params: dict[str, str]) -> Response:
         """The search at `path`, as the service answers it."""
         if not params.get("sok", "").strip():
-            return Response(400, {}, b'{"message": "a search word is needed"}')
+            return BLANK_NAMES if path.startswith("/stedsnavn/") else BLANK_ADDRESS
         searches = {"/adresser/v1/sok": ("adresser", self._addresses), "/stedsnavn/v1/navn": ("navn", self._names)}
         if path not in searches:
             return Response(404, {}, b"")

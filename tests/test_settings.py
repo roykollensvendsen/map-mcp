@@ -14,6 +14,24 @@ def test_no_config_file_gives_the_defaults(tmp_path):
     assert settings.load(tmp_path / "missing.toml") == settings.Settings()
 
 
+def test_with_no_config_a_run_asks_kartverket(tmp_path):
+    """Kartverket needs no key and no device, so the made-up places are only ever asked for."""
+    assert settings.load(tmp_path / "missing.toml").simulate is False
+
+
+def test_simulate_at_the_top_of_the_config_turns_on_the_made_up_places(tmp_path):
+    path = tmp_path / "config.toml"
+    path.write_text("simulate = true\n")
+    assert settings.load(path).simulate is True
+
+
+def test_the_shipped_default_config_names_nothing_made_up():
+    """The template's device and its address are gone: nothing reads them, and nothing is made up."""
+    shipped = (ROOT / "config.default.toml").read_text(encoding="utf-8")
+    assert "[device]" not in shipped
+    assert "example.invalid" not in shipped
+
+
 def test_the_shipped_default_config_loads_as_the_defaults():
     """Install writes config.default.toml as the first config, so it must read back cleanly."""
     assert settings.load(ROOT / "config.default.toml") == settings.Settings()
@@ -21,8 +39,8 @@ def test_the_shipped_default_config_loads_as_the_defaults():
 
 def test_a_key_the_plugin_does_not_know_is_refused_by_name(tmp_path):
     path = tmp_path / "config.toml"
-    path.write_text('[device]\naddres = "x"\n[other]\n')
-    with pytest.raises(settings.SettingsError, match=r"device\.addres, other|other, device\.addres"):
+    path.write_text('simulat = true\n[device]\naddress = "x"\n')
+    with pytest.raises(settings.SettingsError, match=r"device, simulat"):
         settings.load(path)
 
 

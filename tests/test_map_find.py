@@ -10,7 +10,7 @@ import asyncio
 from map_mcp.fake import FakeKartverket, made_up
 from map_mcp.interfaces import BusyError, NotSetUpError
 from map_mcp.server import build_server
-from map_mcp.service import BROKE, NO_QUERY, NOT_SET_UP, UNREACHABLE, MapService
+from map_mcp.service import BROKE, BUSY_A_MOMENT, NO_QUERY, NOT_SET_UP, UNREACHABLE, MapService
 
 
 def _call(geocoder, what="Prøvestien 4", *, simulated=False):
@@ -105,4 +105,14 @@ def test_every_answer_has_a_sentence_to_say_even_when_a_backend_fails():
     """Whatever broke, the voice gets a sentence to read, and never a stack trace."""
     assert _call(_Broken())["say"] == BROKE
     assert _call(_NotSetUp())["say"] == NOT_SET_UP
-    assert _call(_Busy())["say"] == "The address service is busy; try again in 1 second."
+    assert _call(_Busy())["say"] == BUSY_A_MOMENT
+
+
+def test_our_own_short_wait_is_said_with_no_number_and_a_service_s_wait_in_seconds():
+    """map-mcp's own pacing waits under a second, too short to count aloud; a 429's wait is said."""
+    say = _call(_Busy())["say"]
+    assert say == BUSY_A_MOMENT
+    assert not any(c.isdigit() for c in say)
+    kartverket = FakeKartverket()
+    kartverket.busy_for = 30
+    assert "30 seconds" in _call(kartverket)["say"]

@@ -3,6 +3,7 @@
 import pytest
 
 from map_mcp import cli
+from map_mcp.service import UNREACHABLE
 
 
 def test_find_says_what_the_voice_would_hear(capsys):
@@ -10,12 +11,13 @@ def test_find_says_what_the_voice_would_hear(capsys):
     assert capsys.readouterr().out == "Simulated: Prøveby, a town.\n"
 
 
-def test_with_no_real_service_set_up_find_says_so(tmp_path, monkeypatch, capsys):
+def test_a_real_run_asks_kartverket_and_says_when_it_cannot_be_reached(tmp_path, monkeypatch, capsys):
+    """Here the network is shut (conftest), so a real run proves it asked, and never got through."""
     config = tmp_path / "config.toml"
     config.write_text("[device]\nsimulate = false\n")
     monkeypatch.setenv("MAP_MCP_CONFIG", str(config))
     assert cli.main(["find", "Prøveby"]) == 0
-    assert capsys.readouterr().out == "No address service is set up yet, so nothing was asked.\n"
+    assert capsys.readouterr().out == UNREACHABLE + "\n"
 
 
 def test_a_broken_config_stops_the_command_with_the_fix(tmp_path, monkeypatch, capsys):

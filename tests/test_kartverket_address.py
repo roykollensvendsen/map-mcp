@@ -46,10 +46,10 @@ def test_an_address_is_found_with_its_municipality_written_as_a_name():
 
 
 def test_every_request_names_map_mcp_and_nothing_else():
-    """No name, email or host: the User-Agent is the plugin and its version, a constant."""
-    assert re.fullmatch(r"map-mcp/\d+\.\d+\.\d+", http.USER_AGENT)
+    """The plugin, its version and where to read about it: no name, email or host of the owner."""
+    assert re.fullmatch(r"map-mcp/\d+\.\d+\.\d+ \(\+https://github\.com/roykollensvendsen/map-mcp\)", http.USER_AGENT)
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
-    assert f"map-mcp/{version}" == http.USER_AGENT
+    assert f"map-mcp/{version} (+https://github.com/roykollensvendsen/map-mcp)" == http.USER_AGENT
     address, fake, _ = _address()
     asyncio.run(address.find("Prøvestien"))
     assert fake.requests[0].headers["User-Agent"] == http.USER_AGENT

@@ -44,6 +44,15 @@ def test_a_key_the_plugin_does_not_know_is_refused_by_name(tmp_path):
         settings.load(path)
 
 
+@pytest.mark.parametrize("value", ['"false"', '"true"', "0", "1"])
+def test_a_simulate_that_is_not_true_or_false_is_refused_with_the_fix(tmp_path, value):
+    """Read as a truth value, the quoted word "false" would turn on the made-up places."""
+    path = tmp_path / "config.toml"
+    path.write_text(f"simulate = {value}\n")
+    with pytest.raises(settings.SettingsError, match=r"simulate must be true or false, without quotes"):
+        settings.load(path)
+
+
 def test_a_config_that_is_not_toml_says_how_to_fix_it(tmp_path):
     path = tmp_path / "config.toml"
     path.write_text("[device\n")

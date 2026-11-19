@@ -228,8 +228,8 @@ def _layered(tmp_path, files):
 
 def test_an_import_a_layer_may_not_use_is_a_breach(tmp_path):
     allowed = {
-        "device.py": "import json\n",
-        "service.py": "from map_mcp.device import SlowDownError\n",
+        "interfaces.py": "import json\n",
+        "service.py": "from map_mcp.interfaces import BusyError\n",
         "server.py": "from mcp.types import ToolAnnotations\nfrom map_mcp.service import MapService\n",
         "cli.py": "from map_mcp.server import build_server\n",
     }

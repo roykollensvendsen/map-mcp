@@ -1,7 +1,9 @@
 # map-mcp
 
-A made-up source, read by voice. This is an MCP server that a voice assistant reaches through
-claude-voice, as one of its plugins.
+Addresses and places in Norway, by voice. This is an MCP server that a voice assistant reaches
+through claude-voice, as one of its plugins. It reads only, and no answer carries a position.
+
+Address data © Kartverket, under CC BY 4.0.
 
 It started from claude-voice's plugin template. The guide for writing one is
 `docs/write-a-plugin.md` in claude-voice, and `docs/plugin-standard.md` there holds the rules.
@@ -11,16 +13,16 @@ It started from claude-voice's plugin template. The guide for writing one is
 <!-- not run: it needs the project installed, which `just setup` does -->
 ```
 just setup
-uv run map-mcp status --simulate
+uv run map-mcp find Prøveby --simulate
 ```
 
-The second line prints what the voice would hear, from the made-up source in `fake.py`.
+The second line prints what the voice would hear, from the made-up places in `fake.py`.
 
 ## Install it in claude-voice
 
 <!-- not run: it changes the owner's own bridge config, and asks in a terminal -->
 ```
-claude-voice plugins install source --from <this folder>
+claude-voice plugins install map --from <this folder>
 ```
 
 It reads `claude-voice-plugin.toml`, writes `config.default.toml` as your first config, and
@@ -31,9 +33,9 @@ ends with the usual typed-name approval.
 | Part | What it is for |
 |---|---|
 | `src/map_mcp/server.py` | The MCP tools. Each answer carries a `say`, the sentence the voice reads aloud. |
-| `src/map_mcp/service.py` | The core: it asks the source and words every answer, failures included. |
-| `src/map_mcp/device.py` | What the service needs from a source. A real adapter answers it. |
-| `src/map_mcp/fake.py` | A made-up source that refuses what the real one refuses. |
+| `src/map_mcp/service.py` | The core: it asks the backends and words every answer, failures included. |
+| `src/map_mcp/interfaces.py` | What the service needs from a map service. Each real backend answers one. |
+| `src/map_mcp/fake.py` | A made-up Kartverket that refuses what the real one refuses. |
 | `src/map_mcp/settings.py` | The plugin's own config, from its own folder. |
 | `src/map_mcp/platform/` | The one place that knows the operating system. |
 | `scripts/ratchet.py` | The quality levels, which may never get worse than main's. |

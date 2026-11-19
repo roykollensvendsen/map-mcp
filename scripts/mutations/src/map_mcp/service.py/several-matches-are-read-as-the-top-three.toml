@@ -1,0 +1,5 @@
+[[rule]]
+name = "several matches are read as the top three"
+file = "src/map_mcp/service.py"
+find = 'read = places\[:READ_OUT\]'
+replace = 'read = places'

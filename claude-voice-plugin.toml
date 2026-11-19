@@ -1,10 +1,10 @@
 # How claude-voice installs this plugin (docs/plugin-manifest/v1.json in claude-voice).
 # Data only: the bridge reads it and never runs it. tests/test_manifest.py checks it.
 manifest = 1
-name = "source"
+name = "map"
 command = "uv"
 args = ["run", "map-mcp", "serve"]
-tools = ["map_status"]
+tools = ["map_find"]
 timeout = 30
 branch = "main"
 # Add "home" here when the plugin needs a position; it then reads home_file, never a copy.

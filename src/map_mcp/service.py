@@ -1,7 +1,8 @@
-"""The core: ask the source, and word every answer for the voice.
+"""The core: ask the backends, and word every answer for the voice.
 
 It knows no MCP. Every answer is a dict with `success`, an `outcome` and a `say`, the
-sentence the voice reads aloud as it is, and it has one even when the source fails.
+sentence the voice reads aloud as it is, and it has one even when a backend fails. An answer
+names places; it never carries a position.
 """
 
 from __future__ import annotations
@@ -9,45 +10,84 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
-from map_mcp.device import NotSetUpError, SlowDownError, UnreachableError
+from map_mcp.interfaces import BusyError, NotSetUpError, QueryError, UnreachableError
 
 if TYPE_CHECKING:
-    from map_mcp.device import Source
+    from map_mcp.interfaces import Geocoder, Place
 
-UNREACHABLE = "The source isn't answering. Check that it is switched on and on the network."
-NOT_SET_UP = "No real source is set up yet, so nothing was asked."
+UNREACHABLE = "The address service isn't answering. Try again in a minute."
+NOT_SET_UP = "No address service is set up yet, so nothing was asked."
+NO_QUERY = "Say an address or a place name to look for."
 BROKE = "That went wrong inside map-mcp. Try again, and if it fails again, check its log."
+#: How many matches the voice reads before it asks which one was meant.
+READ_OUT = 3
 
 
 class MapService:
-    """What the tools ask, answered from one source."""
+    """What the tools ask, answered from the backends."""
 
-    def __init__(self, source: Source) -> None:
-        """Answer from `source`, the fake or the real one."""
-        self._source = source
+    def __init__(self, geocoder: Geocoder) -> None:
+        """Answer from `geocoder`, the fake or a real one."""
+        self._geocoder = geocoder
 
-    async def status(self) -> dict[str, Any]:
-        """Whether the source is on, and its level, as a sentence."""
-        try:
-            reading = await self._source.read()
-        except SlowDownError as slow:
-            seconds = max(1, math.ceil(slow.seconds))
-            return _failed("slow_down", f"The source is busy; ask again in {seconds} seconds.")
-        except UnreachableError:
-            return _failed("unreachable", UNREACHABLE)
-        except NotSetUpError:
-            return _failed("not_set_up", NOT_SET_UP)
-        # RULE: every answer has a sentence to say even when the source fails
-        except Exception:  # noqa: BLE001 - whatever broke, the voice gets a sentence
-            return _failed("broke", BROKE)
-        state = "on" if reading.on else "off"
+    async def find(self, what: str) -> dict[str, Any]:
+        """The best match for an address or place name, or the top few when there are several."""
+        what = what.strip()
+        if not what:
+            return _failed("no_query", NO_QUERY)
+        places = await self._search(what)
+        if isinstance(places, dict):
+            return places
+        if not places:
+            return _failed("not_found", f"I found no address or place called {what}.")
+        # RULE: several matches are read as the top three
+        read = places[:READ_OUT]
         return {
             "success": True,
-            "outcome": "read",
-            "on": reading.on,
-            "level": reading.level,
-            "say": f"The source is {state}, at level {reading.level}.",
+            "outcome": "found",
+            "matches": [{"name": p.name, "municipality": p.municipality, "kind": p.kind} for p in read],
+            "say": _found(places, read),
         }
+
+    async def _search(self, what: str) -> list[Place] | dict[str, Any]:
+        """The geocoder's matches, or the failed answer that says why there are none."""
+        try:
+            return await self._geocoder.find(what)
+        except BusyError as busy:
+            return _failed("busy", f"The address service is busy; try again in {_seconds(busy.seconds)}.")
+        except UnreachableError:
+            return _failed("unreachable", UNREACHABLE)
+        except QueryError:
+            return _failed("no_query", NO_QUERY)
+        except NotSetUpError:
+            return _failed("not_set_up", NOT_SET_UP)
+        # RULE: every answer has a sentence to say even when a backend fails
+        except Exception:  # noqa: BLE001 - whatever broke, the voice gets a sentence
+            return _failed("broke", BROKE)
+
+
+def _found(places: list[Place], read: list[Place]) -> str:
+    """One match as itself; several as a list to choose from."""
+    if len(places) == 1:
+        return f"{_label(places[0])}."
+    listed = "; ".join(_label(p) for p in read)
+    if len(places) > len(read):
+        return f"{len(places)} matches; the first three: {listed}. Which one?"
+    return f"{len(places)} matches: {listed}. Which one?"
+
+
+def _label(place: Place) -> str:
+    """An address with its municipality; a town as a town; any other place with where it lies."""
+    if place.kind == "address":
+        return f"{place.name}, {place.municipality}"
+    if place.name == place.municipality:
+        return f"{place.name}, a {place.kind}"
+    return f"{place.name}, a {place.kind} in {place.municipality}"
+
+
+def _seconds(seconds: float) -> str:
+    whole = max(1, math.ceil(seconds))
+    return f"{whole} second" if whole == 1 else f"{whole} seconds"
 
 
 def _failed(outcome: str, say: str) -> dict[str, Any]:

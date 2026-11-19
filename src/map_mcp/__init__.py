@@ -1,1 +1,1 @@
-"""map-mcp: a made-up source, read by voice through claude-voice."""
+"""map-mcp: addresses and places in Norway, by voice through claude-voice."""

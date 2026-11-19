@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "map-mcp"
 version = "0.1.0"
-description = "A made-up source, read by voice: an MCP server and claude-voice plugin."
+description = "Addresses and places in Norway, by voice: an MCP server and claude-voice plugin."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["mcp>=2.3"]

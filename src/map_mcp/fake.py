@@ -1,53 +1,54 @@
-"""A made-up source that refuses what the real one refuses.
+"""A made-up Kartverket that refuses what the real one refuses.
 
-A fake that says yes to everything lets a test pass that the real device would fail. So this
-one keeps the device's limits: it answers at most `READS_PER_MINUTE` times a minute and then
-says how long to wait, and it can be told to stop answering, as a source off the network does.
-Write each new limit of the real device in here first, with a test, before the code that
-copes with it.
+A fake that says yes to everything lets a test pass that the real service would fail. So this
+one keeps the service's limits: a search needs a word, and it can be told to stop answering or
+to be busy for a while, as the real one can. Write each new limit of a real service in here
+first, with a test, before the code that copes with it.
+
+Every place here is made up, and every position sits by 0,0, in the sea, so none can be a
+real home.
 """
 
 from __future__ import annotations
 
-import time
-from typing import TYPE_CHECKING
-
-from map_mcp.device import Reading, SlowDownError, UnreachableError
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-#: The made-up device's own limit on reads.
-READS_PER_MINUTE = 6
-WINDOW = 60.0
+from map_mcp.interfaces import BusyError, Place, QueryError, UnreachableError
 
 
-class FakeSource:
-    """A source in memory, with the real one's limits."""
+def made_up(name: str, municipality: str, kind: str = "address", lat: float = 0.01, lon: float = 0.02) -> Place:
+    """A made-up place, by default an address, with a position by 0,0."""
+    return Place(name=name, municipality=municipality, kind=kind, lat=lat, lon=lon)
 
-    def __init__(
-        self,
-        *,
-        on: bool = True,
-        level: int = 40,
-        clock: Callable[[], float] = time.monotonic,
-    ) -> None:
-        """Start the fake in a known state; `clock` lets a test move time on."""
-        self.on = on
-        self.level = level
+
+#: The fake's own places, when a test names none.
+MADE_UP = (
+    made_up("Prøvestien 4", "Prøveby"),
+    made_up("Prøveby", "Prøveby", "town", 0.0, 0.0),
+    made_up("Prøvevatnet", "Prøveby", "lake", 0.03, 0.01),
+)
+
+
+class FakeKartverket:
+    """Kartverket's search in memory, with the real one's limits."""
+
+    def __init__(self, places: list[Place] | tuple[Place, ...] = MADE_UP) -> None:
+        """Answer from `places`, in their order, which stands for the service's ranking."""
+        self.places = list(places)
         self.unreachable = False
-        self._clock = clock
-        self._reads: list[float] = []
+        #: Seconds the service says to wait before it is asked again; 0 when it answers.
+        self.busy_for = 0.0
+        self.asked = 0
 
-    async def read(self) -> Reading:
-        """The state, unless the source is off the network or was asked too often."""
+    async def find(self, what: str) -> list[Place]:
+        """The places whose name holds `what`, whatever its case."""
+        self.asked += 1
         if self.unreachable:
-            msg = "the source did not answer"
+            msg = "the address service did not answer"
             raise UnreachableError(msg)
-        now = self._clock()
-        self._reads = [at for at in self._reads if now - at < WINDOW]
-        # RULE: the fake refuses a read sooner than the device allows
-        if len(self._reads) >= READS_PER_MINUTE:
-            raise SlowDownError(WINDOW - (now - self._reads[0]))
-        self._reads.append(now)
-        return Reading(on=self.on, level=self.level)
+        if self.busy_for:
+            raise BusyError(self.busy_for)
+        # RULE: the fake refuses an empty search as the address service does
+        if not what.strip():
+            msg = "a search needs a word to look for"
+            raise QueryError(msg)
+        wanted = what.strip().casefold()
+        return [place for place in self.places if wanted in place.name.casefold()]

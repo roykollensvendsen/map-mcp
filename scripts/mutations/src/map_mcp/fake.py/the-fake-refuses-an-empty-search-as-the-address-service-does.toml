@@ -1,0 +1,5 @@
+[[rule]]
+name = "the fake refuses an empty search as the address service does"
+file = "src/map_mcp/fake.py"
+find = 'if not what\.strip\(\):'
+replace = 'if False:'

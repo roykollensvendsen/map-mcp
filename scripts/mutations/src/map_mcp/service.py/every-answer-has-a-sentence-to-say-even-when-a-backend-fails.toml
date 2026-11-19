@@ -1,5 +1,5 @@
 [[rule]]
-name = "every answer has a sentence to say even when the source fails"
+name = "every answer has a sentence to say even when a backend fails"
 file = "src/map_mcp/service.py"
 find = 'except Exception:  # noqa: BLE001'
 replace = 'except ZeroDivisionError:  # switched off'

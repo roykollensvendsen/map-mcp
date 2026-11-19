@@ -6,16 +6,29 @@ import argparse
 import asyncio
 import functools
 import sys
+from typing import TYPE_CHECKING
 
 from map_mcp import settings
 from map_mcp.fake import FakeKartverket
-from map_mcp.interfaces import Unconnected
 from map_mcp.service import MapService
+
+if TYPE_CHECKING:
+    from map_mcp.backends.kartverket import Kartverket
 
 #: Every verb this command has.
 COMMANDS: tuple[str, ...] = ("serve", "find")
 #: Help is laid out at one width on every terminal, so a page's copy of it stays true.
 HELP = functools.partial(argparse.HelpFormatter, width=100)
+
+
+def geocoder(*, simulate: bool) -> Kartverket | FakeKartverket:
+    """Kartverket itself, or the made-up places when the run is simulated."""
+    if simulate:
+        return FakeKartverket()
+    # The HTTP layer is a slow import, and a simulated run never needs it.
+    from map_mcp.backends.kartverket import Kartverket  # noqa: PLC0415
+
+    return Kartverket()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"{broken}\n")
         return 2
     simulate = args.simulate or configured.simulate
-    service = MapService(FakeKartverket() if simulate else Unconnected())
+    service = MapService(geocoder(simulate=simulate))
 
     # The MCP server is a slow import, and only a working command needs it.
     from mcp.types import CallToolResult  # noqa: PLC0415

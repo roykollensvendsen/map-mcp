@@ -1,0 +1,5 @@
+[[rule]]
+name = "our own short wait is said with no number and a service's wait in seconds"
+file = "src/map_mcp/service.py"
+find = 'if seconds < 1:'
+replace = 'if False:'

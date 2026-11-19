@@ -3,7 +3,9 @@
 Addresses and places in Norway, by voice. This is an MCP server that a voice assistant reaches
 through claude-voice, as one of its plugins. It reads only, and no answer carries a position.
 
-Address data © Kartverket, under CC BY 4.0.
+Address and place-name data © Kartverket, under CC BY 4.0. A real run asks Kartverket's address
+search (ws.geonorge.no) and its place-name search (api.kartverket.no), sending only the words searched
+for.
 
 It started from claude-voice's plugin template. The guide for writing one is
 `docs/write-a-plugin.md` in claude-voice, and `docs/plugin-standard.md` there holds the rules.

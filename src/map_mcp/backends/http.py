@@ -1,8 +1,9 @@
 """The one way the backends reach a web service.
 
-- Every request carries `USER_AGENT`: the plugin and its version, and no name, email or host.
-- Each service has a `Limiter`. Asked sooner than it allows, it says how long to wait, and the
-  voice says that. Nothing here sleeps or retries.
+- Every request carries `USER_AGENT`: the plugin, its version and the project's page, and no
+  name, email or host of its owner.
+- Each service has a `Limiter`. Asked sooner than it allows, it raises a wait under a second,
+  which the voice says with no number. Nothing here sleeps or retries.
 - A 429 is a wait. A 400 or a 422 is the service refusing the request. Anything else not a 200
   with JSON is the service failing.
 - Every failure is caught here and raised as the plugin's own error, `from None`. Its text and
@@ -27,7 +28,9 @@ from map_mcp.interfaces import BusyError, QueryError, UnreachableError
 
 #: The plugin's version, as pyproject.toml has it; a test keeps the two the same.
 VERSION = "0.1.0"
-USER_AGENT = f"map-mcp/{VERSION}"
+#: Where a service's owner can read what map-mcp is; it names the project, never its owner.
+HOME = "https://github.com/roykollensvendsen/map-mcp"
+USER_AGENT = f"map-mcp/{VERSION} (+{HOME})"
 #: How long one request may take before the voice is told the service isn't answering.
 TIMEOUT = 8.0
 #: The least time between two requests to one service: at most five a second.

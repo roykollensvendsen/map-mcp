@@ -25,6 +25,7 @@ own `RECOVERY` would overwrite or remove it, so the run fails when that file cha
 import os
 import pathlib
 import signal
+import socket
 import sys
 import tempfile
 
@@ -112,6 +113,18 @@ def stop_handlers_put_back():
     yield
     for each, handler in before.items():
         signal.signal(each, handler)
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """No test reaches the network: a real backend run here finds every connection refused."""
+
+    def refused(*_args, **_kwargs):
+        msg = "the tests never reach the network"
+        raise ConnectionRefusedError(msg)
+
+    monkeypatch.setattr(socket.socket, "connect", refused)
+    monkeypatch.setattr(socket, "create_connection", refused)
 
 
 @pytest.fixture(autouse=True)

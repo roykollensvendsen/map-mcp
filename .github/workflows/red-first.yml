@@ -9,9 +9,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
+# The same block as checks.yml, which tests/test_workflows.py pins. This workflow runs on pull
+# requests only, so in practice it is one group per pull request.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

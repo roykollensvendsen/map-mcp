@@ -11,6 +11,12 @@ real home.
 
 from __future__ import annotations
 
+import json
+import urllib.parse
+from dataclasses import dataclass
+from typing import Any
+
+from map_mcp.backends.http import Response
 from map_mcp.interfaces import BusyError, Place, QueryError, UnreachableError
 
 
@@ -52,3 +58,68 @@ class FakeKartverket:
             raise QueryError(msg)
         wanted = what.strip().casefold()
         return [place for place in self.places if wanted in place.name.casefold()]
+
+
+@dataclass(frozen=True)
+class Sent:
+    """One request the HTTP fake was sent: its path, its query and its headers."""
+
+    path: str
+    params: dict[str, str]
+    headers: dict[str, str]
+
+
+class FakeKartverketHttp:
+    """Kartverket over HTTP, in memory: a transport for the real backends, in the service's shape.
+
+    It answers `/adresser/v1/sok` as the address search does, from the made-up places of kind
+    "address". A blank `sok` gets a 400 (the spec says only that a search word is needed, so the
+    status is a guess to check at build). It can be busy (429), broken (500), slow (a timeout
+    whose text holds the URL, as the standard library's does), or answer with what is not JSON.
+    """
+
+    def __init__(self, places: list[Place] | tuple[Place, ...] = MADE_UP) -> None:
+        """Answer from `places`, in their order."""
+        self.places = list(places)
+        self.requests: list[Sent] = []
+        self.busy_for = 0.0
+        #: The Retry-After a 429 carries; None sends none.
+        self.retry_after: str | None = "auto"
+        self.status_500 = False
+        self.timeout = False
+        self.not_json = False
+        self.drop_point = False
+
+    def __call__(self, url: str, headers: dict[str, str], timeout: float) -> Response:  # noqa: ARG002
+        """Answer one GET the way the service would."""
+        parts = urllib.parse.urlsplit(url)
+        params = dict(urllib.parse.parse_qsl(parts.query, keep_blank_values=True))
+        self.requests.append(Sent(parts.path, params, dict(headers)))
+        if self.timeout:
+            msg = f"timed out reading {url}"
+            raise TimeoutError(msg)
+        if self.busy_for:
+            wait = str(int(self.busy_for)) if self.retry_after == "auto" else self.retry_after
+            return Response(429, {} if wait is None else {"retry-after": wait}, b"")
+        if self.status_500:
+            return Response(500, {}, f"failed on {url}".encode())
+        if self.not_json:
+            return Response(200, {}, f"<html>{url}</html>".encode())
+        if not params.get("sok", "").strip():
+            return Response(400, {}, b'{"message": "a search word is needed"}')
+        if parts.path == "/adresser/v1/sok":
+            return Response(200, {}, json.dumps({"adresser": self._addresses(params["sok"])}).encode())
+        return Response(404, {}, b"")
+
+    def _matching(self, what: str, *, address: bool) -> list[Place]:
+        wanted = what.strip().casefold()
+        return [p for p in self.places if (p.kind == "address") == address and wanted in p.name.casefold()]
+
+    def _addresses(self, what: str) -> list[dict[str, Any]]:
+        found = []
+        for place in self._matching(what, address=True):
+            item: dict[str, Any] = {"adressetekst": place.name, "kommunenavn": place.municipality.upper()}
+            if not self.drop_point:
+                item["representasjonspunkt"] = {"epsg": "EPSG:4258", "lat": place.lat, "lon": place.lon}
+            found.append(item)
+        return found

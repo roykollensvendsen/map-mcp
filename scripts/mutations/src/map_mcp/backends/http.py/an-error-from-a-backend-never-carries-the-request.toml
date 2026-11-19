@@ -1,0 +1,5 @@
+[[rule]]
+name = "an error from a backend never carries the request"
+file = "src/map_mcp/backends/http.py"
+find = 'msg = f"\{backend\} did not answer"'
+replace = 'msg = f"{backend} did not answer: {broke}"'

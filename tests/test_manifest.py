@@ -7,6 +7,7 @@ version, copy it again.
 
 import json
 import pathlib
+import re
 import sys
 import tomllib
 
@@ -63,4 +64,5 @@ def test_the_manifest_names_the_config_folder_the_plugin_reads():
 def test_the_default_config_holds_made_up_values_only():
     text = (ROOT / _manifest()["config"]["default"]).read_text(encoding="utf-8")
     assert private_data_scan.offences(text, set()) == []
-    assert ".invalid" in text, "a made-up address ends in .invalid, so it can never reach a real host"
+    hosts = re.findall(r'"([\w.-]+\.[a-z]{2,})"', text)
+    assert all(host.endswith(".invalid") for host in hosts), "a host here must be made up, ending in .invalid"

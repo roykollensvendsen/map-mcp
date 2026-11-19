@@ -13,9 +13,7 @@ def test_find_says_what_the_voice_would_hear(capsys):
 
 def test_a_real_run_asks_kartverket_and_says_when_it_cannot_be_reached(tmp_path, monkeypatch, capsys):
     """Here the network is shut (conftest), so a real run proves it asked, and never got through."""
-    config = tmp_path / "config.toml"
-    config.write_text("[device]\nsimulate = false\n")
-    monkeypatch.setenv("MAP_MCP_CONFIG", str(config))
+    monkeypatch.setenv("MAP_MCP_CONFIG", str(tmp_path / "no-config.toml"))
     assert cli.main(["find", "Prøveby"]) == 0
     assert capsys.readouterr().out == UNREACHABLE + "\n"
 

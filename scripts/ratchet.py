@@ -68,7 +68,19 @@ EXCEPTION = re.compile(r"^\s*ratchet-exception:\s*([a-z_]+)", re.IGNORECASE | re
 TALLY = re.compile(r"(\d+)/(\d+) rules turned off")
 #: The layers, lowest first. The core asks the source and words the answers, and knows no MCP;
 #: only the top, the server and the command line, knows MCP and puts the core together.
-CORE = {"__init__", "interfaces", "fake", "service", "settings", "platform", "platform.base", "platform.linux"}
+CORE = {
+    "__init__",
+    "interfaces",
+    "fake",
+    "backends",
+    "backends.http",
+    "backends.kartverket_address",
+    "service",
+    "settings",
+    "platform",
+    "platform.base",
+    "platform.linux",
+}
 TOP = {"server", "cli"}
 #: Which layers each layer may import from this package, and the outside packages it never may.
 ALLOWED = {

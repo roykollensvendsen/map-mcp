@@ -1,0 +1,5 @@
+[[rule]]
+name = "a service is asked at most five times a second"
+file = "src/map_mcp/backends/http.py"
+find = 'if self\._last is not None and now - self\._last < MIN_INTERVAL:'
+replace = 'if False:'

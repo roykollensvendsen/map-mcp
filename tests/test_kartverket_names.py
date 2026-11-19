@@ -80,3 +80,14 @@ def test_the_fake_answers_a_path_it_does_not_know_with_not_found():
     """So a backend pointed at a wrong path fails in a test as it would against the service."""
     fake = FakeKartverketHttp()
     assert fake("https://example.invalid/ukjent/v1/sok?sok=x", {}, 8.0).status == 404
+
+
+def test_an_unprocessable_search_is_a_refusal_not_a_failure():
+    """Seen live on 19.11: the place-name search answers a blank search with a 422, not a 400."""
+
+    def refuses(_url, _headers, _timeout):
+        return http.Response(422, {"content-type": "application/json"}, b'{"errors": {"message": {}}}')
+
+    names = KartverketNames(transport=refuses, limiter=http.Limiter(clock=_Clock()))
+    with pytest.raises(QueryError):
+        asyncio.run(names.find("Prøvevatnet"))

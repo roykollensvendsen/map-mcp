@@ -1,0 +1,33 @@
+{
+  "address": {
+    "adresser": [
+      {
+        "adressetekst": "str",
+        "kommunenavn": "str",
+        "representasjonspunkt": {
+          "epsg": "str",
+          "lat": "float",
+          "lon": "float"
+        }
+      }
+    ]
+  },
+  "names": {
+    "navn": [
+      {
+        "kommuner": [
+          {
+            "kommunenavn": "str",
+            "kommunenummer": "str"
+          }
+        ],
+        "navneobjekttype": "str",
+        "representasjonspunkt": {
+          "nord": "float",
+          "øst": "float"
+        },
+        "skrivemåte": "str"
+      }
+    ]
+  }
+}

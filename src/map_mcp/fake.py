@@ -33,6 +33,10 @@ MADE_UP = (
 )
 
 
+#: The place-name service's own word for a kind the fake's places name in English.
+SERVICE_KINDS = {"town": "By", "lake": "Innsjø"}
+
+
 class FakeKartverket:
     """Kartverket's search in memory, with the real one's limits."""
 
@@ -73,7 +77,9 @@ class FakeKartverketHttp:
     """Kartverket over HTTP, in memory: a transport for the real backends, in the service's shape.
 
     It answers `/adresser/v1/sok` as the address search does, from the made-up places of kind
-    "address". A blank `sok` gets a 400 (the spec says only that a search word is needed, so the
+    "address", and `/stedsnavn/v1/navn` as the place-name search does, from the rest. The
+    place-name kinds go back to the service's own words. A blank `sok` gets a 400 (the spec
+    says only that a search word is needed, so the
     status is a guess to check at build). It can be busy (429), broken (500), slow (a timeout
     whose text holds the URL, as the standard library's does), or answer with what is not JSON.
     """
@@ -89,6 +95,8 @@ class FakeKartverketHttp:
         self.timeout = False
         self.not_json = False
         self.drop_point = False
+        #: The coordinate system the place-name search answers in.
+        self.names_koordsys = 4258
 
     def __call__(self, url: str, headers: dict[str, str], timeout: float) -> Response:  # noqa: ARG002
         """Answer one GET the way the service would."""
@@ -107,9 +115,11 @@ class FakeKartverketHttp:
             return Response(200, {}, f"<html>{url}</html>".encode())
         if not params.get("sok", "").strip():
             return Response(400, {}, b'{"message": "a search word is needed"}')
-        if parts.path == "/adresser/v1/sok":
-            return Response(200, {}, json.dumps({"adresser": self._addresses(params["sok"])}).encode())
-        return Response(404, {}, b"")
+        searches = {"/adresser/v1/sok": ("adresser", self._addresses), "/stedsnavn/v1/navn": ("navn", self._names)}
+        if parts.path not in searches:
+            return Response(404, {}, b"")
+        key, search = searches[parts.path]
+        return Response(200, {}, json.dumps({key: search(params["sok"])}).encode())
 
     def _matching(self, what: str, *, address: bool) -> list[Place]:
         wanted = what.strip().casefold()
@@ -121,5 +131,19 @@ class FakeKartverketHttp:
             item: dict[str, Any] = {"adressetekst": place.name, "kommunenavn": place.municipality.upper()}
             if not self.drop_point:
                 item["representasjonspunkt"] = {"epsg": "EPSG:4258", "lat": place.lat, "lon": place.lon}
+            found.append(item)
+        return found
+
+    def _names(self, what: str) -> list[dict[str, Any]]:
+        found = []
+        for place in self._matching(what, address=False):
+            item: dict[str, Any] = {
+                "skrivemåte": place.name,
+                "navneobjekttype": SERVICE_KINDS.get(place.kind, place.kind),
+                "kommuner": [{"kommunenavn": place.municipality, "kommunenummer": "0000"}]
+                if place.municipality
+                else [],
+                "representasjonspunkt": {"øst": place.lon, "nord": place.lat, "koordsys": self.names_koordsys},
+            }
             found.append(item)
         return found

@@ -75,6 +75,7 @@ CORE = {
     "backends",
     "backends.http",
     "backends.kartverket_address",
+    "backends.kartverket_names",
     "service",
     "settings",
     "platform",

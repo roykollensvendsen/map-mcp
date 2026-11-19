@@ -3,7 +3,7 @@
 - Every request carries `USER_AGENT`: the plugin and its version, and no name, email or host.
 - Each service has a `Limiter`. Asked sooner than it allows, it says how long to wait, and the
   voice says that. Nothing here sleeps or retries.
-- A 429 is a wait. A 400 is the service refusing the request. Anything else that is not a 200
+- A 429 is a wait. A 400 or a 422 is the service refusing the request. Anything else not a 200
   with JSON is the service failing.
 - Every failure is caught here and raised as the plugin's own error, `from None`. Its text and
   the log name the backend, the kind of failure and the status only, never the URL, which holds
@@ -32,6 +32,9 @@ USER_AGENT = f"map-mcp/{VERSION}"
 TIMEOUT = 8.0
 #: The least time between two requests to one service: at most five a second.
 MIN_INTERVAL = 0.2
+#: HTTP's numbers for a request the service refuses: the address search sends 400, the
+#: place-name search 422.
+REFUSED = (400, 422)
 #: The wait said for a 429 that names none.
 DEFAULT_WAIT = 60.0
 
@@ -101,7 +104,8 @@ async def get_json(
     if answer.status == 429:  # noqa: PLR2004 - HTTP's own number for too many requests
         _failed(backend, "busy", answer.status)
         raise BusyError(_retry_after(answer.headers))
-    if answer.status == 400:  # noqa: PLR2004 - HTTP's own number for a refused request
+    # RULE: an unprocessable search is a refusal not a failure
+    if answer.status in REFUSED:
         _failed(backend, "refused", answer.status)
         msg = f"{backend} refused the request"
         raise QueryError(msg)

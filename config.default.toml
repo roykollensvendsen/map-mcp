@@ -1,0 +1,9 @@
+# map-mcp's settings. `claude-voice plugins install` copies this file to
+# ~/.config/map-mcp/config.toml the first time, and never over one that exists.
+# Made-up values only: nothing here names a real device, place or person.
+
+[device]
+# The source's address on your network. The made-up default reaches nothing.
+address = "source.example.invalid"
+# Answer from the made-up source in fake.py instead of a real one.
+simulate = true

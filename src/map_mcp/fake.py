@@ -103,22 +103,33 @@ class FakeKartverketHttp:
         parts = urllib.parse.urlsplit(url)
         params = dict(urllib.parse.parse_qsl(parts.query, keep_blank_values=True))
         self.requests.append(Sent(parts.path, params, dict(headers)))
+        return self._trouble(url) or self._search(parts.path, params)
+
+    def _trouble(self, url: str) -> Response | None:
+        """The failure the fake was told to give, or None when it answers. Each failure holds the URL."""
         if self.timeout:
             msg = f"timed out reading {url}"
             raise TimeoutError(msg)
         if self.busy_for:
-            wait = str(int(self.busy_for)) if self.retry_after == "auto" else self.retry_after
-            return Response(429, {} if wait is None else {"retry-after": wait}, b"")
+            return self._busy()
         if self.status_500:
             return Response(500, {}, f"failed on {url}".encode())
         if self.not_json:
             return Response(200, {}, f"<html>{url}</html>".encode())
+        return None
+
+    def _busy(self) -> Response:
+        wait = str(int(self.busy_for)) if self.retry_after == "auto" else self.retry_after
+        return Response(429, {} if wait is None else {"retry-after": wait}, b"")
+
+    def _search(self, path: str, params: dict[str, str]) -> Response:
+        """The search at `path`, as the service answers it."""
         if not params.get("sok", "").strip():
             return Response(400, {}, b'{"message": "a search word is needed"}')
         searches = {"/adresser/v1/sok": ("adresser", self._addresses), "/stedsnavn/v1/navn": ("navn", self._names)}
-        if parts.path not in searches:
+        if path not in searches:
             return Response(404, {}, b"")
-        key, search = searches[parts.path]
+        key, search = searches[path]
         return Response(200, {}, json.dumps({key: search(params["sok"])}).encode())
 
     def _matching(self, what: str, *, address: bool) -> list[Place]:

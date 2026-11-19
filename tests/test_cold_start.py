@@ -105,12 +105,12 @@ def test_a_heavy_start_is_caught_by_the_cpu_it_uses(tmp_path):
 
 
 class _Recording:
-    """A source that keeps every read and answers none."""
+    """A geocoder that keeps every search and answers none."""
 
     def __init__(self):
         self.asked = 0
 
-    async def read(self):
+    async def find(self, _what):
         self.asked += 1
         raise OSError
 
@@ -125,7 +125,7 @@ def test_listing_the_tools_asks_the_source_nothing():
 def test_a_read_is_seen_by_the_recording_source():
     """Proof the check above can fail: asking a tool does reach the source."""
     source = _Recording()
-    asyncio.run(build_server(MapService(source)).call_tool("map_status", {}))
+    asyncio.run(build_server(MapService(source)).call_tool("map_find", {"what": "Prøveby"}))
     assert source.asked == 1
 
 

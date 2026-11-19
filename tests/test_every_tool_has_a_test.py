@@ -3,7 +3,7 @@
 import asyncio
 import pathlib
 
-from map_mcp.fake import FakeSource
+from map_mcp.fake import FakeKartverket
 from map_mcp.server import FIRST_LINE_MAX, TOOLS, build_server
 from map_mcp.service import MapService
 
@@ -11,7 +11,7 @@ TESTS = pathlib.Path(__file__).parent
 
 
 def _tools():
-    return {tool.name: tool for tool in asyncio.run(build_server(MapService(FakeSource())).list_tools())}
+    return {tool.name: tool for tool in asyncio.run(build_server(MapService(FakeKartverket())).list_tools())}
 
 
 def test_every_tool_has_a_test_file_named_after_it():

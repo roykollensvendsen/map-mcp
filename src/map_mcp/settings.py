@@ -44,6 +44,12 @@ def load(path: pathlib.Path | None = None) -> Settings:
     path = config_file() if path is None else path
     if not path.is_file():
         return Settings()
+    data = _known_keys(path)
+    return Settings(simulate=_true_or_false(path, data.get("simulate", Settings.simulate)))
+
+
+def _known_keys(path: pathlib.Path) -> dict[str, object]:
+    """The TOML in `path`, refused with the fix if it is broken or holds a key map-mcp does not know."""
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as broken:
@@ -53,4 +59,12 @@ def load(path: pathlib.Path | None = None) -> Settings:
     if unknown:
         msg = f"{path} has keys map-mcp does not know: {', '.join(unknown)}; remove them or fix their spelling"
         raise SettingsError(msg)
-    return Settings(simulate=bool(data.get("simulate", Settings.simulate)))
+    return data
+
+
+def _true_or_false(path: pathlib.Path, simulate: object) -> bool:
+    """`simulate` itself; a quoted "false" would read as true, so anything but a bool is refused."""
+    if not isinstance(simulate, bool):
+        msg = f"{path}: simulate must be true or false, without quotes, not {simulate!r}"
+        raise SettingsError(msg)
+    return simulate

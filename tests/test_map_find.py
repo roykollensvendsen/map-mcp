@@ -82,7 +82,7 @@ def test_a_busy_service_is_said_as_a_wait():
     kartverket.busy_for = 30
     answer = _call(kartverket)
     assert answer["outcome"] == "busy"
-    assert answer["say"] == "The address service is busy; try again in 30 seconds."
+    assert answer["say"] == "Kartverket is busy; try again in 30 seconds."
 
 
 class _Broken:

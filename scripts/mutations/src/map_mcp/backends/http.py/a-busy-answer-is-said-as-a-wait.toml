@@ -1,5 +1,5 @@
 [[rule]]
 name = "a busy answer is said as a wait"
 file = "src/map_mcp/backends/http.py"
-find = 'if answer\.status == 429:'
+find = '^\s*if answer\.status in busy:$'
 replace = 'if False:'

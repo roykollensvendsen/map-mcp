@@ -12,11 +12,13 @@ real home.
 from __future__ import annotations
 
 import json
+import re
 import urllib.parse
 from dataclasses import dataclass
 from typing import Any
 
 from map_mcp.backends.http import Response
+from map_mcp.backends.overpass import FILTERS
 from map_mcp.interfaces import BusyError, Nearby, Place, QueryError, UnreachableError, metres
 
 
@@ -205,3 +207,66 @@ class FakeKartverketHttp:
             }
             found.append(item)
         return found
+
+
+#: The question Overpass is sent: the kind's tags, then the reach and the point.
+#: Each kind, by the tags Overpass is asked for.
+KIND_OF = {tags: kind for kind, tags in FILTERS.items()}
+AROUND = re.compile(r"nwr(?P<tags>\[.*\])\(around:(?P<within>\d+),(?P<lat>-?[\d.]+),(?P<lon>-?[\d.]+)\)")
+
+
+class FakeOverpassHttp:
+    """Overpass over HTTP, in memory: a transport for the real backend, in the service's shape.
+
+    It answers `/api/interpreter` from `spots`, by the kind whose tags the query names and the
+    reach around its point. Each spot is a node, or with `as_ways` a way at its centre. It can be
+    busy (429), out of room (504), slow (a timeout whose text holds the URL), or leave out points.
+    """
+
+    def __init__(self, spots: list[Nearby] | tuple[Nearby, ...] = NEARBY_MADE_UP) -> None:
+        """Answer from `spots`, in their order."""
+        self.spots = list(spots)
+        self.requests: list[Sent] = []
+        self.busy_for = 0.0
+        self.gateway_timeout = False
+        self.timeout = False
+        self.as_ways = False
+        self.drop_point = False
+
+    def __call__(self, url: str, headers: dict[str, str], timeout: float) -> Response:  # noqa: ARG002
+        """Answer one GET the way Overpass would."""
+        parts = urllib.parse.urlsplit(url)
+        params = dict(urllib.parse.parse_qsl(parts.query, keep_blank_values=True))
+        self.requests.append(Sent(parts.path, params, dict(headers)))
+        asked = AROUND.search(params.get("data", ""))
+        if parts.path != "/api/interpreter" or asked is None:
+            return Response(400, {}, b"")
+        return self._trouble(url) or Response(200, {}, json.dumps(self._answer(asked)).encode())
+
+    def _trouble(self, url: str) -> Response | None:
+        """What Overpass was told to fail with, or None when it answers; each failure holds the URL."""
+        if self.timeout:
+            msg = f"timed out reading {url}"
+            raise TimeoutError(msg)
+        if self.busy_for:
+            return Response(429, {"retry-after": str(int(self.busy_for))}, b"")
+        if self.gateway_timeout:
+            return Response(504, {}, f"no room for {url}".encode())
+        return None
+
+    def _answer(self, asked: re.Match[str]) -> dict[str, Any]:
+        kind = KIND_OF.get(asked["tags"])
+        lat, lon, within = float(asked["lat"]), float(asked["lon"]), float(asked["within"])
+        found = [s for s in self.spots if s.kind == kind and metres(lat, lon, s.lat, s.lon) <= within]
+        return {
+            "version": 0.6,
+            "generator": "made-up Overpass",
+            "elements": [self._element(n, s) for n, s in enumerate(found)],
+        }
+
+    def _element(self, n: int, spot: Nearby) -> dict[str, Any]:
+        tags = {"name": spot.name} if spot.name else {}
+        point = {} if self.drop_point else {"lat": spot.lat, "lon": spot.lon}
+        if self.as_ways:
+            return {"type": "way", "id": n + 1, "center": point, "tags": tags}
+        return {"type": "node", "id": n + 1, **point, "tags": tags}

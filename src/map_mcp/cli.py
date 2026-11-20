@@ -14,6 +14,7 @@ from map_mcp.service import MapService
 
 if TYPE_CHECKING:
     from map_mcp.backends.kartverket import Kartverket
+    from map_mcp.backends.overpass import Overpass
 
 #: Every verb this command has.
 COMMANDS: tuple[str, ...] = ("serve", "find")
@@ -31,9 +32,13 @@ def geocoder(*, simulate: bool) -> Kartverket | FakeKartverket:
     return Kartverket()
 
 
-def places(*, simulate: bool) -> FakeNearby | None:
-    """The made-up nearby places when the run is simulated; a real run has none until OpenStreetMap's backend."""
-    return FakeNearby() if simulate else None
+def places(*, simulate: bool) -> Overpass | FakeNearby:
+    """OpenStreetMap's Overpass, or the made-up nearby places when the run is simulated."""
+    if simulate:
+        return FakeNearby()
+    from map_mcp.backends.overpass import Overpass  # noqa: PLC0415 - a simulated run never needs it
+
+    return Overpass()
 
 
 def main(argv: list[str] | None = None) -> int:

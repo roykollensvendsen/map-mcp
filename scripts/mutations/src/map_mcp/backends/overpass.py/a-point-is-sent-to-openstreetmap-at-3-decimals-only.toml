@@ -1,0 +1,5 @@
+[[rule]]
+name = "a point is sent to OpenStreetMap at 3 decimals only"
+file = "src/map_mcp/backends/overpass.py"
+find = '^\s*question = \(kind, round\(lat, 3\), round\(lon, 3\), round\(within_m\)\)$'
+replace = 'question = (kind, lat, lon, round(within_m))'

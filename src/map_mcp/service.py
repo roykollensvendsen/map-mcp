@@ -10,7 +10,15 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
-from map_mcp.interfaces import BusyError, NotSetUpError, QueryError, UnconnectedPlaces, UnreachableError, metres
+from map_mcp.interfaces import (
+    BusyError,
+    DailyLimitError,
+    NotSetUpError,
+    QueryError,
+    UnconnectedPlaces,
+    UnreachableError,
+    metres,
+)
 
 if TYPE_CHECKING:
     from map_mcp.interfaces import Geocoder, Nearby, Place, Places
@@ -80,6 +88,8 @@ class MapService:
             return await self._places.nearby(kind, origin.lat, origin.lon, within_km * 1000)
         except BusyError as busy:
             return _failed("busy", _busy(busy.seconds, service))
+        except DailyLimitError:
+            return _failed("daily_limit", f"I've asked {service} as often as I may today; ask again tomorrow.")
         except UnreachableError:
             return _failed("unreachable", f"{service} isn't answering. Try again in a minute.")
         except NotSetUpError:

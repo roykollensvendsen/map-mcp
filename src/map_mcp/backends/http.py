@@ -4,8 +4,8 @@
   name, email or host of its owner.
 - Each service has a `Limiter`. Asked sooner than it allows, it raises a wait under a second,
   which the voice says with no number. Nothing here sleeps or retries.
-- A 429 is a wait. A 400 or a 422 is the service refusing the request. Anything else not a 200
-  with JSON is the service failing.
+- A 429 is a wait, and so is any other status a backend names as busy. A 400 or a 422 is the
+  service refusing the request. Anything else not a 200 with JSON is the service failing.
 - Every failure is caught here and raised as the plugin's own error, `from None`. Its text and
   the log name the backend, the kind of failure and the status only, never the URL, which holds
   what was searched for.
@@ -84,15 +84,21 @@ class Limiter:
         self._last = now
 
 
-async def get_json(
+async def get_json(  # noqa: PLR0913 - a service's busy statuses and wait are its own
     backend: str,
     url: str,
     params: dict[str, str],
     *,
     transport: Transport,
     limiter: Limiter,
+    busy: tuple[int, ...] = (429,),
+    wait: float = DEFAULT_WAIT,
 ) -> Any:  # noqa: ANN401 - each backend reads its own service's shape
-    """GET `url` with `params`, as `backend`, and return the parsed JSON body."""
+    """GET `url` with `params`, as `backend`, and return the parsed JSON body.
+
+    `busy` are the statuses the service sends when it is too busy, and `wait` the wait said for
+    one that names none.
+    """
     limiter.take()
     full = f"{url}?{urllib.parse.urlencode(params)}"
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
@@ -104,9 +110,9 @@ async def get_json(
         msg = f"{backend} did not answer"
         raise UnreachableError(msg) from None
     # RULE: a busy answer is said as a wait
-    if answer.status == 429:  # noqa: PLR2004 - HTTP's own number for too many requests
+    if answer.status in busy:
         _failed(backend, "busy", answer.status)
-        raise BusyError(_retry_after(answer.headers))
+        raise BusyError(_retry_after(answer.headers, wait))
     # RULE: an unprocessable search is a refusal not a failure
     if answer.status in REFUSED:
         _failed(backend, "refused", answer.status)
@@ -124,12 +130,12 @@ async def get_json(
         raise UnreachableError(msg) from None
 
 
-def _retry_after(headers: dict[str, str]) -> float:
-    """The wait a 429 names in seconds, or a minute when it names none or a date."""
+def _retry_after(headers: dict[str, str], wait: float) -> float:
+    """The wait a busy answer names in seconds, or `wait` when it names none or a date."""
     try:
         return max(1.0, float(headers["retry-after"]))
     except (KeyError, ValueError):
-        return DEFAULT_WAIT
+        return wait
 
 
 def _failed(backend: str, kind: str, status: int | None) -> None:

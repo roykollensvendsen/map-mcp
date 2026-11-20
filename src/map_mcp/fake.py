@@ -261,6 +261,7 @@ class FakeOverpassHttp:
         return {
             "version": 0.6,
             "generator": "made-up Overpass",
+            "osm3s": {"timestamp_osm_base": "made up", "copyright": "made-up data, no map"},
             "elements": [self._element(n, s) for n, s in enumerate(found)],
         }
 
@@ -268,5 +269,5 @@ class FakeOverpassHttp:
         tags = {"name": spot.name} if spot.name else {}
         point = {} if self.drop_point else {"lat": spot.lat, "lon": spot.lon}
         if self.as_ways:
-            return {"type": "way", "id": n + 1, "center": point, "tags": tags}
+            return {"type": "way", "id": n + 1, "center": point, "nodes": [n + 1], "tags": tags}
         return {"type": "node", "id": n + 1, **point, "tags": tags}

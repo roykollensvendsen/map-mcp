@@ -76,6 +76,14 @@ def test_a_reach_past_the_kind_s_own_is_refused_with_the_fix():
     assert answer["say"] == "I look at most 3 km out for a cafe; ask for 3 km or less."
 
 
+@pytest.mark.parametrize("within_km", [0, -2, float("nan"), float("inf"), float("-inf")])
+def test_a_reach_that_is_not_a_distance_above_0_is_refused_with_the_fix(within_km):
+    # NaN slips past `within > reach`, and JSON as Python reads it can carry NaN and Infinity.
+    answer = _call(what="cafe", within_km=within_km)
+    assert (answer["success"], answer["outcome"]) == (False, "not_a_reach")
+    assert answer["say"] == "Ask for a distance above 0 km, up to 3 km for a cafe."
+
+
 def test_a_shorter_reach_leaves_out_what_lies_past_it():
     answer = _call(within_km=1.5)
     assert answer["say"] == "The nearest groceries to Prøveby: Prøve Mat, 330 m; Butikk Nord, 1.1 km."

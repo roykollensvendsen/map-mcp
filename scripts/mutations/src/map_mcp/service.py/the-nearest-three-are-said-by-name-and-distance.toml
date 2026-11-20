@@ -1,0 +1,5 @@
+[[rule]]
+name = "the nearest three are said by name and distance"
+file = "src/map_mcp/service.py"
+find = '^\s*ranked = sorted\(\(\(metres\(origin\.lat, origin\.lon, n\.lat, n\.lon\), n\) for n in found\), key=_first\)\[:READ_OUT\]$'
+replace = 'ranked = sorted(((metres(origin.lat, origin.lon, n.lat, n.lon), n) for n in found), key=_first)'

@@ -158,11 +158,14 @@ def _the_kinds() -> str:
 
 
 def _reach(kind: str, within_km: float | None) -> float | dict[str, Any]:
-    """How far out to look: the kind's own reach, or less when asked; further, or a kind off the list, is refused."""
+    """How far out to look: the kind's own reach, or less; further, nothing, or a kind off the list is refused."""
     if kind not in KINDS:
         return _failed("unknown_kind", _the_kinds())
     one, _, reach = KINDS[kind]
     within = reach if within_km is None else within_km
+    # RULE: a reach that is not a distance above 0 is refused with the fix
+    if not (math.isfinite(within) and within > 0):
+        return _failed("not_a_reach", f"Ask for a distance above 0 km, up to {reach} km for a {one}.")
     # RULE: a reach past the kind's own is refused with the fix
     if within > reach:
         return _failed("too_far", f"I look at most {reach} km out for a {one}; ask for {reach} km or less.")

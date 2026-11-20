@@ -1,0 +1,5 @@
+[[rule]]
+name = "a reach that is not a distance above 0 is refused with the fix"
+file = "src/map_mcp/service.py"
+find = '^\s*if not \(math\.isfinite\(within\) and within > 0\):$'
+replace = 'if False:'

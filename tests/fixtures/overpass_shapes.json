@@ -1,0 +1,47 @@
+{
+  "node": {
+    "elements": [
+      {
+        "id": "int",
+        "lat": "float",
+        "lon": "float",
+        "tags": {
+          "amenity": "str",
+          "name": "str"
+        },
+        "type": "str"
+      }
+    ],
+    "generator": "str",
+    "osm3s": {
+      "copyright": "str",
+      "timestamp_osm_base": "str"
+    },
+    "version": "float"
+  },
+  "way": {
+    "elements": [
+      {
+        "center": {
+          "lat": "float",
+          "lon": "float"
+        },
+        "id": "int",
+        "nodes": [
+          "int"
+        ],
+        "tags": {
+          "amenity": "str",
+          "name": "str"
+        },
+        "type": "str"
+      }
+    ],
+    "generator": "str",
+    "osm3s": {
+      "copyright": "str",
+      "timestamp_osm_base": "str"
+    },
+    "version": "float"
+  }
+}

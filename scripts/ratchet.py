@@ -77,6 +77,7 @@ CORE = {
     "backends.kartverket_address",
     "backends.kartverket_names",
     "backends.kartverket",
+    "backends.overpass",
     "service",
     "settings",
     "platform",

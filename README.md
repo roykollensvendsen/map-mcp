@@ -8,9 +8,10 @@ search (ws.geonorge.no) and its place-name search (api.kartverket.no), sending o
 for.
 
 Two tools: `map_find` finds an address or place, and `map_nearby` names the nearest three of one
-kind near a place, such as groceries or chargers. Nearby places will come from OpenStreetMap
-(© OpenStreetMap contributors, ODbL). Until that backend is built, a real run says it has no
-nearby-places service, and only `--simulate` answers, from made-up places.
+kind near a place, such as groceries or chargers. Nearby places come from OpenStreetMap's
+Overpass API (overpass-api.de), map data © OpenStreetMap contributors, under the ODbL. It is
+sent the kind, the reach and the point at three decimals. map-mcp asks it one question at a
+time and at most 100 a day, and keeps an answer for an hour.
 
 It started from claude-voice's plugin template. The guide for writing one is
 `docs/write-a-plugin.md` in claude-voice, and `docs/plugin-standard.md` there holds the rules.

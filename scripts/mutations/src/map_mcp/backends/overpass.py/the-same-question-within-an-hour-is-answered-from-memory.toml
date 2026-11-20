@@ -1,0 +1,5 @@
+[[rule]]
+name = "the same question within an hour is answered from memory"
+file = "src/map_mcp/backends/overpass.py"
+find = '^\s*if kept and self\._clock\(\) - kept\[0\] < KEEP:$'
+replace = 'if False:'

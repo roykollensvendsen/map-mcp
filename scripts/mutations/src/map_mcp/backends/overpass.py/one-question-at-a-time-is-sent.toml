@@ -1,0 +1,5 @@
+[[rule]]
+name = "one question at a time is sent"
+file = "src/map_mcp/backends/overpass.py"
+find = '^\s*if self\._out:$'
+replace = 'if False:'

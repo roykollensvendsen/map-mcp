@@ -1,0 +1,5 @@
+[[rule]]
+name = "no more than the daily cap is asked"
+file = "src/map_mcp/backends/overpass.py"
+find = '^\s*if self\._asked >= DAILY_CAP:$'
+replace = 'if False:'

@@ -1,0 +1,5 @@
+[[rule]]
+name = "a name from the map is cleaned before the voice reads it"
+file = "src/map_mcp/backends/overpass.py"
+find = '^\s*return " "\.join\(kept\.split\(\)\)\[:NAME_MAX\]$'
+replace = 'return name'

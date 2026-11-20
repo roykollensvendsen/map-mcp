@@ -32,6 +32,10 @@ class BusyError(MapError):
         self.seconds = seconds
 
 
+class DailyLimitError(MapError):
+    """map-mcp has asked the service as often as it may today."""
+
+
 class QueryError(MapError):
     """The service refused the request itself, such as a search with no word in it."""
 

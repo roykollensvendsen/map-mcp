@@ -1,0 +1,5 @@
+[[rule]]
+name = "a gateway timeout from overpass is said as a wait"
+file = "src/map_mcp/backends/overpass.py"
+find = '^BUSY = \(429, 504\)$'
+replace = 'BUSY = (429,)'

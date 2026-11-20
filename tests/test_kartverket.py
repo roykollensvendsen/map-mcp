@@ -4,6 +4,7 @@ Both backends share one made-up Kartverket over HTTP (`fake.py`). Every place he
 """
 
 import asyncio
+import logging
 
 import pytest
 
@@ -74,3 +75,23 @@ def test_when_one_service_fails_and_the_other_finds_nothing_the_failure_is_said(
     with pytest.raises(BusyError) as said:
         asyncio.run(_kartverket(addresses=busy, names=FakeKartverketHttp()).find("Ingensteds"))
     assert said.value.seconds == 30
+
+
+class _Broken:
+    """A search whose own code breaks, as it would on an answer of a shape it does not know."""
+
+    async def find(self, what):
+        raise KeyError(what)
+
+
+def test_a_failure_behind_places_found_is_still_logged(caplog):
+    """Places from one search stand, but a search broken in code must not hide behind them for good.
+
+    The log names the search and the kind of failure, never what was asked.
+    """
+    working = KartverketNames(transport=FakeKartverketHttp(), limiter=http.Limiter(clock=_Clock()))
+    with caplog.at_level(logging.WARNING):
+        places = asyncio.run(Kartverket(addresses=_Broken(), names=working).find("Prøve"))
+    assert [p.name for p in places] == ["Prøveby", "Prøvevatnet"]
+    assert "address search failed: KeyError" in caplog.text
+    assert "Prøve" not in caplog.text

@@ -1,4 +1,4 @@
-"""A made-up Kartverket that refuses what the real one refuses.
+"""A made-up Kartverket and nearby-places service, each refusing what the real one refuses.
 
 A fake that says yes to everything lets a test pass that the real service would fail. So this
 one keeps the service's limits: a search needs a word, and it can be told to stop answering or
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from map_mcp.backends.http import Response
-from map_mcp.interfaces import BusyError, Place, QueryError, UnreachableError
+from map_mcp.interfaces import BusyError, Nearby, Place, QueryError, UnreachableError, metres
 
 
 def made_up(name: str, municipality: str, kind: str = "address", lat: float = 0.01, lon: float = 0.02) -> Place:
@@ -62,6 +62,46 @@ class FakeKartverket:
             raise QueryError(msg)
         wanted = what.strip().casefold()
         return [place for place in self.places if wanted in place.name.casefold()]
+
+
+def spot(name: str, kind: str, lat: float, lon: float) -> Nearby:
+    """A made-up place of a kind, by 0,0; an empty name stands for one the map never named."""
+    return Nearby(name=name, kind=kind, lat=lat, lon=lon)
+
+
+#: The fake's own places of each kind, around Prøveby at 0,0. A grocery 11 km out makes four in
+#: a grocery's 15 km, so the voice must pick three; the toilet sits past a toilet's 3 km.
+NEARBY_MADE_UP = (
+    spot("Prøve Mat", "grocery", 0.003, 0.0),
+    spot("Butikk Nord", "grocery", 0.01, 0.0),
+    spot("Lager Sør", "grocery", -0.02, 0.0),
+    spot("Fjernmat", "grocery", 0.1, 0.0),
+    spot("Prøve Lading", "charging", 0.0, 0.005),
+    spot("Prøve Toalett", "toilet", 0.04, 0.0),
+)
+
+
+class FakeNearby:
+    """A nearby-places service in memory, with a real one's limits."""
+
+    service = "OpenStreetMap"
+    attribution = "Made-up places, from no map's data"
+
+    def __init__(self, spots: list[Nearby] | tuple[Nearby, ...] = NEARBY_MADE_UP) -> None:
+        """Answer from `spots`, in no order, as a real service gives them."""
+        self.spots = list(spots)
+        self.unreachable = False
+        #: Seconds the service says to wait before it is asked again; 0 when it answers.
+        self.busy_for = 0.0
+
+    async def nearby(self, kind: str, lat: float, lon: float, within_m: float) -> list[Nearby]:
+        """The spots of `kind` within `within_m` metres, as a radius search finds them."""
+        if self.unreachable:
+            msg = "the nearby-places service did not answer"
+            raise UnreachableError(msg)
+        if self.busy_for:
+            raise BusyError(self.busy_for)
+        return [s for s in self.spots if s.kind == kind and metres(lat, lon, s.lat, s.lon) <= within_m]
 
 
 @dataclass(frozen=True)

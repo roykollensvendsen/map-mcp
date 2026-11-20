@@ -7,6 +7,11 @@ Address and place-name data © Kartverket, under CC BY 4.0. A real run asks Kart
 search (ws.geonorge.no) and its place-name search (api.kartverket.no), sending only the words searched
 for.
 
+Two tools: `map_find` finds an address or place, and `map_nearby` names the nearest three of one
+kind near a place, such as groceries or chargers. Nearby places will come from OpenStreetMap
+(© OpenStreetMap contributors, ODbL). Until that backend is built, a real run says it has no
+nearby-places service, and only `--simulate` answers, from made-up places.
+
 It started from claude-voice's plugin template. The guide for writing one is
 `docs/write-a-plugin.md` in claude-voice, and `docs/plugin-standard.md` there holds the rules.
 

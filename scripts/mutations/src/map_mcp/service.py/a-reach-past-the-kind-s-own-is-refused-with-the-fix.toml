@@ -1,0 +1,5 @@
+[[rule]]
+name = "a reach past the kind's own is refused with the fix"
+file = "src/map_mcp/service.py"
+find = '^\s*if within > reach:$'
+replace = 'if False:'

@@ -9,7 +9,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from map_mcp import settings
-from map_mcp.fake import FakeKartverket
+from map_mcp.fake import FakeKartverket, FakeNearby
 from map_mcp.service import MapService
 
 if TYPE_CHECKING:
@@ -31,6 +31,11 @@ def geocoder(*, simulate: bool) -> Kartverket | FakeKartverket:
     return Kartverket()
 
 
+def places(*, simulate: bool) -> FakeNearby | None:
+    """The made-up nearby places when the run is simulated; a real run has none until OpenStreetMap's backend."""
+    return FakeNearby() if simulate else None
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch. Returns a process exit code."""
     parser = argparse.ArgumentParser(prog="map-mcp", description=__doc__, formatter_class=HELP)
@@ -47,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"{broken}\n")
         return 2
     simulate = args.simulate or configured.simulate
-    service = MapService(geocoder(simulate=simulate))
+    service = MapService(geocoder(simulate=simulate), places(simulate=simulate))
 
     # The MCP server is a slow import, and only a working command needs it.
     from mcp.types import CallToolResult  # noqa: PLC0415

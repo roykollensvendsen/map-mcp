@@ -1,0 +1,5 @@
+[[rule]]
+name = "a broken places service still gives a sentence to say"
+file = "src/map_mcp/service.py"
+find = '^\s*except Exception:  # noqa: BLE001 - whatever broke near a place, the voice gets a sentence$'
+replace = 'except ZeroDivisionError:  # switched off'

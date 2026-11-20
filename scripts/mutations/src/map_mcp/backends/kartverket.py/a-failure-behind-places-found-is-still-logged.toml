@@ -1,0 +1,5 @@
+[[rule]]
+name = "a failure behind places found is still logged"
+file = "src/map_mcp/backends/kartverket.py"
+find = '^\s*log\.warning\("%s failed: %s; the other search answered", search, type\(failure\)\.__name__\)$'
+replace = 'pass'
